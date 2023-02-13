@@ -1,37 +1,15 @@
-#include "ustring.h"
+#include "lexer.h"
 #include <iostream>
-#include <typeinfo>
-#include "ustring.h"
+#include <sstream>
 
 
 int main(void) {
-  std::string s = "helloこんにちは";
-  UString us = UString("helloこんにちは");
+  std::istringstream src = std::istringstream("abc xyz");
 
-  // auto a = "a";
+  Lexer lexer(src);
 
-  // std::cout << typeid(a).name() << std::endl;
-
-  std::cout << s << std::endl;
-  std::cout << s.length() << std::endl;
-
-  std::cout << us << std::endl;
-  std::cout << us.length() << std::endl;
-
-  for (auto c: s) {
-    std::cout << c;
-  }
-  std::cout << std::endl << *us.begin() << std::endl;
-
-  for (auto it = us.begin(); it != us.end(); it++) {
-    std::cout << *it;
-  }
-  std::cout << std::endl;
-
-  for (auto c: us) {
-    std::cout << c;
-  }
-  std::cout << std::endl;
+  lexer.lex();
+  lexer.dump();
 
   return 0;
 }
