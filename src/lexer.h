@@ -82,7 +82,17 @@ public:
   }
 
 private:
-  char peek_one_byte() { return source[pos]; }
+  unsigned int peek_one_byte() {
+    if (is_eof())
+      return EOF;
+    return source[pos];
+  }
+
+  unsigned int peek_one_byte(int nth) {
+    if (pos + nth >= source.size())
+      return EOF;
+    return source[pos + nth];
+  }
 
   char skip_one_byte() {
     if (pos <= source.size())
@@ -95,7 +105,7 @@ private:
   // continuation. (e.g, 0xFE and 0xFF) This repo is just for experiment so we
   // do not deal with them.
   int get_codepoint_length() {
-    char input = peek_one_byte();
+    unsigned int input = peek_one_byte();
     if (input < 0x7f) {
       // 1 byte
       return 1;
@@ -116,7 +126,7 @@ private:
 
   // FIXME: スキップしないようにする
   Codepoint peek_one_utf8_character() {
-    char input = skip_one_byte();
+    int input = skip_one_byte();
     if (input < 0x7f) {
       // 1 byte
       return input;
