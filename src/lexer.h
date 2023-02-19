@@ -15,14 +15,14 @@ public:
   void lex() {
     int current_char;
     while (true) {
-      current_char = peek_input();
+      current_char = peek_one_byte();
       std::cout << current_char;
 
       if (is_eof())
         break;
 
       if (is_whitespace()) {
-        skip_input();
+        skip_one_byte();
         continue;
       }
       parse_ident();
@@ -41,15 +41,15 @@ public:
 
     str.reserve(16);
 
-    str += peek_input();
-    skip_input();
+    str += peek_one_byte();
+    skip_one_byte();
     int length = 1;
 
     while (is_alpha()) {
-      int current_char = peek_input();
+      int current_char = peek_one_byte();
       str += current_char;
       length++;
-      skip_input();
+      skip_one_byte();
     }
 
     // Token ident = Token(0, IDENT, std::move(str));
@@ -58,9 +58,9 @@ public:
   }
 
 private:
-  char peek_input() { return file.peek(); }
+  char peek_one_byte() { return file.peek(); }
 
-  void skip_input() {
+  void skip_one_byte() {
     pos++;
     if (!file.eof()) {
       file.ignore(1);
@@ -68,14 +68,14 @@ private:
   }
 
   bool is_alpha() {
-    int c = peek_input();
+    int c = peek_one_byte();
 
     return ('A' <= c && c <= 'Z') || ('a' <= c && c <= 'z');
   }
 
-  bool is_whitespace() { return peek_input() == ' '; }
+  bool is_whitespace() { return peek_one_byte() == ' '; }
 
-  bool is_eof() { return peek_input() == EOF; }
+  bool is_eof() { return peek_one_byte() == EOF; }
 
   std::istringstream &file;
   int pos;
