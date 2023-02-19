@@ -4,9 +4,10 @@
 
 
 int main(void) {
-  std::istringstream src = std::istringstream("abc xyz def");
+  std::string s = "abc xyz def";
+  std::vector<char> v(s.begin(), s.end());
 
-  Lexer lexer(src);
+  Lexer lexer(v);
 
   lexer.lex();
   lexer.dump();
