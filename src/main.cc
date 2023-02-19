@@ -4,7 +4,7 @@
 
 
 int main(void) {
-  std::istringstream src = std::istringstream("abc xyz");
+  std::istringstream src = std::istringstream("abc xyz def");
 
   Lexer lexer(src);
 
