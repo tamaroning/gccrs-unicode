@@ -46,6 +46,8 @@ Token {
 # Details
 Identifiers defined in the lexer in this repo are 100% compatible with identifiers defined in Rust Reference.
 
+Implementation of the lexer is in 'src/lexer.h'.
+
 # TODO
 - [ ] normalization of identifiers
 - [ ] encoding to punycode
