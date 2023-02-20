@@ -2,36 +2,17 @@
 #define LEXER_H
 
 #include "token.h"
-#include <cstdint>
-#include <fstream>
+#include "unicode/unicode.h"
+#include <cassert>
 #include <iostream>
 #include <memory>
-#include <sstream>
 #include <vector>
 
 class Codepoint {
 public:
-  Codepoint (unsigned int v) : v(v) {}
-
-  /*
-  static Codepoint eof() {
-    return Codepoint(UINT32_MAX);
-  }
-
-  bool is_eof() {
-    return v == UINT32_MAX;
-  }
-  */
+  Codepoint(unsigned int v) : v(v) {}
 
   unsigned int v;
-
-  bool is_legacy_id_start() {
-    return ('A' <= v && v <= 'Z') || ('a' <= v && v <= 'z') || v == '_';
-  }
-
-  bool is_legacy_id_continue() {
-    return is_legacy_id_start() || ('0' <= v && v <= '9');
-  }
 };
 
 class Lexer {
@@ -40,17 +21,21 @@ public:
 
   // just tokenizes sequence of identifiers and whitespaces
   void lex() {
-    int current_char;
+    Codepoint current_char(0);
     while (!is_eof()) {
-      current_char = peek_one_byte();
       std::cout << "current pos: " << pos << std::endl;
-      std::cout << "current char: " << current_char << std::endl;
+      std::cout << "current input(1byte): 0x" << std::hex << peek_input()
+                << std::dec << std::endl;
+      current_char = peek_one_utf8_character();
+      std::cout << "current char: 0x" << std::hex << current_char.v << std::dec
+                << std::endl;
 
       if (is_whitespace()) {
-        skip_one_byte();
+        advance_input();
         continue;
+      } else if (is_xid_start()) {
+        parse_ident();
       }
-      parse_ident();
     }
   }
 
@@ -61,51 +46,51 @@ public:
   }
 
   void parse_ident() {
-    std::string str;
     int start_pos = pos;
 
-    str.reserve(16);
+    // identifiers must start with XID_Start and continue with XID_Continue
+    // refs:
+    // UAX31:
+    // https://unicode.org/reports/tr31/#Table_Lexical_Classes_for_Identifiers
+    // Rust:
+    // https://doc.rust-lang.org/reference/identifiers.html?highlight=unicode#identifiers
+    assert(is_xid_start());
+    advance_one_utf8_charcter();
 
-    str += peek_one_byte();
-    skip_one_byte();
-    int length = 1;
-
-    while (is_alpha()) {
-      int current_char = peek_one_byte();
-      str += current_char;
-      length++;
-      skip_one_byte();
+    while (is_xid_continue()) {
+      advance_one_utf8_charcter();
     }
 
+    std::string str(source.begin() + start_pos, source.begin() + pos);
     tokens.push_back(
         std::make_unique<Token>(Token(start_pos, IDENT, std::move(str))));
   }
 
 private:
-  unsigned int peek_one_byte() {
-    if (is_eof())
-      return EOF;
-    return source[pos];
-  }
+  unsigned int peek_input() { return peek_input(0); }
 
-  unsigned int peek_one_byte(int nth) {
+  unsigned int peek_input(int nth) {
     if (pos + nth >= source.size())
       return EOF;
     return source[pos + nth];
   }
 
-  char skip_one_byte() {
-    if (pos <= source.size())
-      pos++;
+  // advance input by 1 byte
+  void advance_input() { advance_input(1); }
 
-    return source[pos];
+  // advance input by n byte
+  void advance_input(int n) {
+    if (pos + n >= source.size())
+      pos = source.size();
+    else
+      pos += n;
   }
 
-  // NOTE: This function does not work correctly for some invalid utf8
-  // continuation. (e.g, 0xFE and 0xFF) This repo is just for experiment so we
-  // do not deal with them.
+  // NOTE: These function `get_codepoint_length` and `peek_one_utf8_character`
+  // does not work correctly for some invalid utf8 continuation. (e.g, 0xFE and
+  // 0xFF) This repo is just for experiment so we do not deal with them.
   int get_codepoint_length() {
-    unsigned int input = peek_one_byte();
+    unsigned int input = peek_input();
     if (input < 0x7f) {
       // 1 byte
       return 1;
@@ -124,27 +109,26 @@ private:
     }
   }
 
-  // FIXME: スキップしないようにする
   Codepoint peek_one_utf8_character() {
-    int input = skip_one_byte();
+    unsigned int input = peek_input();
     if (input < 0x7f) {
       // 1 byte
       return input;
     } else if ((input & 0xE0) == 0xC0) {
       // 2 bytes
-      char input2 = skip_one_byte();
+      unsigned int input2 = peek_input(1);
       return ((input & 0b11111) << 5) | (input2 & 0b111111);
     } else if ((input & 0xF0) == 0xE0) {
       // 3 bytes
-      char input2 = skip_one_byte();
-      char input3 = skip_one_byte();
+      unsigned int input2 = peek_input(1);
+      unsigned int input3 = peek_input(2);
       return ((input & 0b1111) << 12) | ((input2 & 0b111111) << 6) |
              (input3 & 0b111111);
     } else if ((input & 0xF8) == 0xF0) {
       // 4 bytes
-      char input2 = skip_one_byte();
-      char input3 = skip_one_byte();
-      char input4 = skip_one_byte();
+      unsigned int input2 = peek_input(1);
+      unsigned int input3 = peek_input(2);
+      unsigned int input4 = peek_input(3);
       return ((input & 0b111) << 18) | ((input2 & 0b111111) << 12) |
              ((input3 & 0b111111) << 6) | (input4 & 0b111111);
     } else {
@@ -153,12 +137,52 @@ private:
     }
   }
 
-  bool is_alpha() {
-    char c = peek_one_byte();
-    return ('A' <= c && c <= 'Z') || ('a' <= c && c <= 'z');
+  // returns the length of codepoint (i.e. 1~4 bytes)
+  int advance_one_utf8_charcter() {
+    int ret = get_codepoint_length();
+    pos += ret;
+    return ret;
   }
 
-  bool is_whitespace() { return peek_one_byte() == ' '; }
+  bool is_xid_start() {
+    unsigned int v = peek_input();
+    // Fast-path for ascii idents
+    if (('A' <= v && v <= 'Z') || ('a' <= v && v <= 'z'))
+      return true;
+
+    unsigned int cp = peek_one_utf8_character().v;
+    return cp > 0x7f && Unicode::is_xid_start(cp);
+  }
+
+  bool is_xid_continue() {
+    unsigned int v = peek_input();
+    // Fast-path for ascii idents
+    if (('A' <= v && v <= 'Z') || ('a' <= v && v <= 'z') ||
+        ('0' <= v && v <= '9') || v == '_')
+      return true;
+
+    unsigned int cp = peek_one_utf8_character().v;
+    return cp > 0x7f && Unicode::is_xid_continue(cp);
+  }
+
+  bool is_whitespace() {
+    unsigned int cp = peek_one_utf8_character().v;
+    return cp == 0x0009    // \t
+           || cp == 0x000a // \n
+           || cp == 0x000b // vertical tab
+           || cp == 0x000c // form feed
+           || cp == 0x000d // \r
+           || cp == 0x0020 // space
+           // NEXT LINE from latin1
+           || cp == 0x0085
+           // Bidi markers
+           || cp == 0x200e // LEFT-TO-RIGHT MARK
+           || cp == 0x200f // RIGHT-TO-LEFT MARK
+           // Dedicated whitespace characters from Unicode
+           || cp == 0x2028 // LINE SEPARATOR
+           || cp == 0x2029 // PARAGRAPH SEPARATOR
+        ;
+  }
 
   bool is_eof() { return pos == source.size(); }
 

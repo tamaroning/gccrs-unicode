@@ -28,7 +28,7 @@ private:
   // Token location.
   // ref: https://dmalcolm.fedorapeople.org/presentations/cauldron-2017/#1
   // location_t locus;
-  
+
   unsigned int pos;
 
   // Associated text (if any) of token.
