@@ -24,7 +24,8 @@ public:
     Codepoint current_char(0);
     while (!is_eof()) {
       std::cout << "current pos: " << pos << std::endl;
-      std::cout << "current input(1byte): 0x" << std::hex << peek_input()
+      unsigned int current_input = peek_input();
+      std::cout << "current input(1byte): 0x" << std::hex << current_input
                 << std::dec << std::endl;
       current_char = peek_one_utf8_character();
       std::cout << "current char: 0x" << std::hex << current_char.v << std::dec

@@ -22,16 +22,13 @@ public:
   }
 
 private:
-  // Token kind.
+  // token kind
   TokenKind kind;
 
-  // Token location.
-  // ref: https://dmalcolm.fedorapeople.org/presentations/cauldron-2017/#1
-  // location_t locus;
-
+  // location (start position)
   unsigned int pos;
 
-  // Associated text (if any) of token.
+  // associated text
   std::string str;
 };
 

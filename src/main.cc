@@ -1,7 +1,9 @@
 #include "lexer.h"
 
 int main(void) {
-  std::string s = "abc xyz def あいう え おかき ";
+  // Use Japanese alphabets as an example
+  std::string s = "abc\nxyz\t\tあいうえお \r かきくけこ ";
+
   std::vector<char> v(s.begin(), s.end());
 
   Lexer lexer(v);
