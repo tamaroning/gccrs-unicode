@@ -1,3 +1,6 @@
+# THIS REPO IS AN EXPERIMENT FOR GCCRS TO SUPPRT UNICODE
+Reach out to me (tamaroning) in gccrs Zulip chat!
+
 # Build
 ```
 git clone <THIS REPO>
@@ -12,8 +15,11 @@ cmake --build build
 ```
 
 This commands executes tokenizing a simple sequence of unicode identifiers below:
+
 input (hardcoded in src/main.cc) : `"abc\nxyz\t\tあいうえお \r かきくけこ "`
+
 output (stdout) :
+
 ```rust
 Token {
         kind: 0
