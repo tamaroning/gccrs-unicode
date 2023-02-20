@@ -44,7 +44,7 @@ Token {
 ```
 
 # Details
-Identifiers are compatible with identifiers defined in Rust Reference.
+Identifiers defined in the lexer in this repo are 100% compatible with identifiers defined in Rust Reference.
 
 # TODO
 - [ ] normalization of identifiers
